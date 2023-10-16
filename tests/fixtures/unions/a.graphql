@@ -1,0 +1,6 @@
+#import U from b.graphql
+
+type A {
+  a: String
+  u: U
+}

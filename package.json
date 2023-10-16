@@ -1,0 +1,15 @@
+{
+  "name": "graphql-import",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "tape tests/*.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "graphql": "^16.8.1",
+    "tape": "^5.7.1"
+  }
+}
