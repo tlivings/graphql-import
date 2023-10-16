@@ -10,12 +10,12 @@ const loadFile = async function (fileName) {
   return (await fs.readFile(path.resolve(__dirname, fileName))).toString().trim();
 }
 
-test('test load simple', async (t) => {
-  const expected = await loadFile('fixtures/simple/expected.graphql');
+test('test load directives', async (t) => {
+  const expected = await loadFile('fixtures/directives/expected.graphql');
   
   const loader = new loaders.GraphQLFileLoader();
 
-  const contents = await loader.loadFile(__dirname, 'fixtures/simple/a.graphql');
+  const contents = await loader.loadFile(__dirname, 'fixtures/directives/a.graphql');
 
   t.equal(contents, expected);
 
