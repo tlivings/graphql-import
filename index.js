@@ -4,6 +4,9 @@ const graphql = require('graphql');
 const fs = require('fs/promises');
 const path = require('path');
 
+/**
+ * Reads and caches files
+ */
 class CachedFileLoader {
   constructor() {
     this._cache = new Map();
@@ -23,6 +26,9 @@ class CachedFileLoader {
   }
 }
 
+/**
+ * Parses and caches graphql documents
+ */
 class CachedGraphqlParser {
   constructor() {
     this._cache = new Map();
@@ -40,6 +46,9 @@ class CachedGraphqlParser {
   }
 }
 
+/**
+ * Designed to filter a document object by the given types and their transitive dependencies
+ */
 class DocumentDefinitionFilter {
   constructor() {
     this._visited = new Set();
@@ -78,10 +87,12 @@ class DocumentDefinitionFilter {
 
                 for (const field of node.fields) {
                   const fieldType = field.type.type ? field.type.type.name.value : field.type.name.value;
-                  fieldDirectives.push(...field.directives.map(directive => directive.name.value));
+                  
                   if (!DocumentDefinitionFilter.isBuiltInType(fieldType)) {
                     fieldTypes.push(fieldType);
                   }
+
+                  fieldDirectives.push(...field.directives.map(directive => directive.name.value));
                 }
 
                 types.push(...fieldTypes);
@@ -103,7 +114,7 @@ class DocumentDefinitionFilter {
       });
     }
 
-    //Second pass prunes
+    //Second pass prunes out anything not in the expanded type list
     return graphql.visit(document, {
       enter(node) {
         switch (node.kind) {
@@ -124,6 +135,9 @@ class DocumentDefinitionFilter {
   }
 }
 
+/**
+ * Load a graphql file and process imports
+ */
 class GraphQLFileLoader {
   constructor() {
     this._fileLoader = new CachedFileLoader();
@@ -198,9 +212,10 @@ class GraphQLFileLoader {
     const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(cwd, filePath);
     const definitions = [];
 
+    //Build a dependency tree
     const imports = await this.buildImportsListFrom(absolutePath);
 
-    //Make a copy so we can reverse-process
+    //Make a copy so we can reverse-process from bottom to top
     const entries = [...imports.entries()];
 
     //This iterates through imports, parses graphql, and prunes out the requests types
@@ -215,6 +230,7 @@ class GraphQLFileLoader {
         continue;
       }
 
+      //Filter by types and their transitive dependencies
       const filteredDocument = this._definitionFilter.filter(document, types);
 
       definitions.push(...filteredDocument.definitions);
