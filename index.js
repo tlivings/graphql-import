@@ -55,69 +55,88 @@ class DocumentDefinitionFilter {
   }
   static isBuiltInType(typeName) {
     return (
-      typeName === graphql.Kind.STRING ||
-      typeName === graphql.Kind.INT ||
-      typeName === graphql.Kind.FLOAT ||
-      typeName === graphql.Kind.BOOLEAN ||
-      typeName === graphql.Kind.ID
+      typeName === 'String' ||
+      typeName === 'Int' ||
+      typeName === 'Float' ||
+      typeName === 'Boolean' ||
+      typeName === 'ID'
     );
+  }
+  static findImplementationsFor(typeName, document) {
+    const implementations = [];
+
+    for (const node of document.definitions) {
+      if (node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION) {
+        const interfaces = (node.interfaces || []).map(iface => iface.name.value);
+
+        if (interfaces.includes(typeName)) {
+          implementations.push(node.name.value);
+        }
+      }
+    }
+
+    return implementations;
   }
   filter(document, types) {
     const visiting = [...types];
 
     //First pass finds transitive dependencies
     while (visiting.length > 0) {
-      const type = visiting.pop();
+      const typeName = visiting.pop();
 
-      if (this._visited.has(type)) {
+      if (this._visited.has(typeName)) {
         continue;
       }
 
-      this._visited.add(type);
+      this._visited.add(typeName);
 
-      graphql.visit(document, {
-        enter(node) {
-          switch (node.kind) {
-            case graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION:
-            case graphql.Kind.OBJECT_TYPE_DEFINITION:
-              if (node.name.value === type) {
-                const typeDirectives = node.directives.map(directive => directive.name.value);
-                const fieldTypes = [];
-                const fieldDirectives = [];
-
-                for (const field of node.fields) {
-                  const fieldType = field.type.type ? field.type.type.name.value : field.type.name.value;
-                  
-                  if (!DocumentDefinitionFilter.isBuiltInType(fieldType)) {
-                    fieldTypes.push(fieldType);
-                  }
-
-                  fieldDirectives.push(...field.directives.map(directive => directive.name.value));
+      for (const node of document.definitions) {
+        switch (node.kind) {
+          case graphql.Kind.INTERFACE_TYPE_DEFINITION:
+            if (node.name.value === typeName) {
+              const implementations = DocumentDefinitionFilter.findImplementationsFor(typeName, document);
+              types.push(...implementations);
+              visiting.push(...implementations);
+            }
+          case graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION:
+          case graphql.Kind.OBJECT_TYPE_DEFINITION:
+            if (node.name.value === typeName) {
+              const typeDirectives = node.directives.map(directive => directive.name.value);
+              const fieldTypes = [];
+              const fieldDirectives = [];
+  
+              for (const field of node.fields) {
+                const fieldType = field.type.type ? field.type.type.name.value : field.type.name.value;
+                
+                if (!DocumentDefinitionFilter.isBuiltInType(fieldType)) {
+                  fieldTypes.push(fieldType);
                 }
-
-                types.push(...fieldTypes);
-                types.push(...fieldDirectives);
-                types.push(...typeDirectives);
-                visiting.push(...fieldTypes);
+  
+                fieldDirectives.push(...field.directives.map(directive => directive.name.value));
               }
-              break;
-            case graphql.Kind.UNION_TYPE_DEFINITION:
-              if (node.name.value === type) {
-                const unionTypes = node.types.map(type => type.name.value);
-                types.push(...unionTypes);
-                visiting.push(...unionTypes);
-              }
-              break;
-            default: break;
-          }
-        }
-      });
+  
+              types.push(...fieldTypes);
+              types.push(...fieldDirectives);
+              types.push(...typeDirectives);
+              visiting.push(...fieldTypes);
+            }
+            break;
+          case graphql.Kind.UNION_TYPE_DEFINITION:
+            if (node.name.value === typeName) {
+              const unionTypes = node.types.map(type => type.name.value);
+              types.push(...unionTypes);
+              visiting.push(...unionTypes);
+            }
+            break;
+          default: break;
+        } 
+      }
     }
 
     //Second pass prunes out anything not in the expanded type list
     return graphql.visit(document, {
       enter(node) {
-        switch (node.kind) {
+        switch (node.kind) {  
           case graphql.Kind.OBJECT_TYPE_DEFINITION:
           case graphql.Kind.UNION_TYPE_DEFINITION:
           case graphql.Kind.ENUM_TYPE_DEFINITION:

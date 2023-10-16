@@ -17,7 +17,7 @@ test('test load simple', async (t) => {
 
   const contents = await loader.loadFile(__dirname, 'fixtures/simple/a.graphql');
 
-  t.equal(expected, contents);
+  t.equal(contents, expected);
 
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
@@ -33,7 +33,7 @@ test('test load unions', async (t) => {
 
   const contents = await loader.loadFile(__dirname, 'fixtures/unions/a.graphql');
 
-  t.equal(expected, contents);
+  t.equal(contents, expected);
 
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
@@ -49,7 +49,7 @@ test('test load only imported types', async (t) => {
 
   const contents = await loader.loadFile(__dirname, 'fixtures/unused/a.graphql');
 
-  t.equal(expected, contents);
+  t.equal(contents, expected);
 
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
@@ -65,7 +65,7 @@ test('test circular', async (t) => {
 
   const contents = await loader.loadFile(__dirname, 'fixtures/circular/a.graphql');
 
-  t.equal(expected, contents);
+  t.equal(contents, expected);
 
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
@@ -93,7 +93,23 @@ test('test deep', async (t) => {
 
   const contents = await loader.loadFile(__dirname, 'fixtures/deep/a.graphql');
 
-  t.equal(expected, contents);
+  t.equal(contents, expected);
+
+  t.doesNotThrow(() => {
+    graphql.validateSchema(graphql.buildSchema(contents));
+  });
+  
+  t.end();
+});
+
+test('test interface implementations', async (t) => {
+  const expected = await loadFile('fixtures/implements/expected.graphql');
+  
+  const loader = new loaders.GraphQLFileLoader();
+
+  const contents = await loader.loadFile(__dirname, 'fixtures/implements/a.graphql');
+
+  t.equal(contents, expected);
 
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));

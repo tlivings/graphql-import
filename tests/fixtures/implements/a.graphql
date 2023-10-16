@@ -1,0 +1,6 @@
+#import I from b.graphql
+
+type A implements I {
+  i: String
+  a: String
+}
