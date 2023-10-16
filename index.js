@@ -46,11 +46,11 @@ class DocumentDefinitionFilter {
   }
   static isBuiltInType(typeName) {
     return (
-      typeName === 'String' ||
-      typeName === 'Int' ||
-      typeName === 'Float' ||
-      typeName === 'Boolean' ||
-      typeName === 'ID'
+      typeName === graphql.Kind.STRING ||
+      typeName === graphql.Kind.INT ||
+      typeName === graphql.Kind.FLOAT ||
+      typeName === graphql.Kind.BOOLEAN ||
+      typeName === graphql.Kind.ID
     );
   }
   filter(document, types) {
