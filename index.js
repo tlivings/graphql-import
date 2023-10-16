@@ -173,7 +173,7 @@ class GraphQLFileLoader {
 
       const importLine = line.slice(line.indexOf('import') + 7);
 
-      const regex = /(.+) from (.+)/;
+      const regex = /(.+) from \"(.+)\"/;
       const match = regex.exec(importLine);
 
       if (!match) {

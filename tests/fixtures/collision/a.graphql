@@ -1,4 +1,4 @@
-#import * from b.graphql
+#import * from "b.graphql"
 
 type A {
   a: String

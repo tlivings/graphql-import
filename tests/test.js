@@ -133,3 +133,19 @@ test('test extends', async (t) => {
   
   t.end();
 });
+
+test('test multiple', async (t) => {
+  const expected = await loadFile('fixtures/multiple/expected.graphql');
+  
+  const loader = new loaders.GraphQLFileLoader();
+
+  const contents = await loader.loadFile(__dirname, 'fixtures/multiple/a.graphql');
+
+  t.equal(contents, expected);
+
+  t.doesNotThrow(() => {
+    graphql.validateSchema(graphql.buildSchema(contents));
+  });
+  
+  t.end();
+});

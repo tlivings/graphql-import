@@ -1,4 +1,4 @@
-#import A from a.graphql
+#import A from "a.graphql"
 
 type B {
   a: A

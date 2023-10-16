@@ -1,4 +1,4 @@
-#import B from c.graphql
+#import B from "c.graphql"
 
 extend type B {
   c: String
