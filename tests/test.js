@@ -57,3 +57,47 @@ test('test load only imported types', async (t) => {
   
   t.end();
 });
+
+test('test circular', async (t) => {
+  const expected = await loadFile('fixtures/circular/expected.graphql');
+  
+  const loader = new loaders.GraphQLFileLoader();
+
+  const contents = await loader.loadFile(__dirname, 'fixtures/circular/a.graphql');
+
+  t.equal(expected, contents);
+
+  t.doesNotThrow(() => {
+    graphql.validateSchema(graphql.buildSchema(contents));
+  });
+  
+  t.end();
+});
+
+test('test collision', async (t) => {
+  const loader = new loaders.GraphQLFileLoader();
+
+  const contents = await loader.loadFile(__dirname, 'fixtures/collision/a.graphql');
+
+  t.throws(() => {
+    graphql.validateSchema(graphql.buildSchema(contents));
+  });
+  
+  t.end();
+});
+
+test('test deep', async (t) => {
+  const expected = await loadFile('fixtures/deep/expected.graphql');
+  
+  const loader = new loaders.GraphQLFileLoader();
+
+  const contents = await loader.loadFile(__dirname, 'fixtures/deep/a.graphql');
+
+  t.equal(expected, contents);
+
+  t.doesNotThrow(() => {
+    graphql.validateSchema(graphql.buildSchema(contents));
+  });
+  
+  t.end();
+});

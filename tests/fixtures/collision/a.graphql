@@ -1,0 +1,5 @@
+#import * from b.graphql
+
+type A {
+  a: String
+}
