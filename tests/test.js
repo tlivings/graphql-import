@@ -82,7 +82,7 @@ test('test collision', async (t) => {
   t.throws(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
   });
-  
+   
   t.end();
 });
 
@@ -108,6 +108,22 @@ test('test interface implementations', async (t) => {
   const loader = new loaders.GraphQLFileLoader();
 
   const contents = await loader.loadFile(__dirname, 'fixtures/implements/a.graphql');
+
+  t.equal(contents, expected);
+
+  t.doesNotThrow(() => {
+    graphql.validateSchema(graphql.buildSchema(contents));
+  });
+  
+  t.end();
+});
+
+test('test extends', async (t) => {
+  const expected = await loadFile('fixtures/extends/expected.graphql');
+  
+  const loader = new loaders.GraphQLFileLoader();
+
+  const contents = await loader.loadFile(__dirname, 'fixtures/extends/a.graphql');
 
   t.equal(contents, expected);
 

@@ -1,0 +1,5 @@
+#import B from c.graphql
+
+extend type B {
+  c: String
+}

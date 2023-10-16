@@ -1,0 +1,12 @@
+type B {
+  b: String
+}
+
+extend type B {
+  c: String
+}
+
+type A {
+  a: String
+  b: B
+}
