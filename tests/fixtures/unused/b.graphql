@@ -1,0 +1,20 @@
+directive @someDirective on FIELD_DEFINITION
+
+interface I {
+  i: String
+}
+
+type B implements I {
+  i: String
+  b: String @someDirective
+}
+
+type C {
+  c: String
+}
+
+type D {
+  d: String
+}
+
+union U = C | D

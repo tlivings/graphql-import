@@ -41,3 +41,19 @@ test('test load unions', async (t) => {
   
   t.end();
 });
+
+test('test load only imported types', async (t) => {
+  const expected = await loadFile('fixtures/unused/expected.graphql');
+  
+  const loader = new loaders.GraphQLFileLoader();
+
+  const contents = await loader.loadFile(__dirname, 'fixtures/unused/a.graphql');
+
+  t.equal(expected, contents);
+
+  t.doesNotThrow(() => {
+    graphql.validateSchema(graphql.buildSchema(contents));
+  });
+  
+  t.end();
+});
