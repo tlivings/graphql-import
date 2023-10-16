@@ -1,0 +1,13 @@
+type C {
+  c: String
+}
+
+type B {
+  b: String
+}
+
+type A {
+  a: String
+  b: B
+  c: C
+}
