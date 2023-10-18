@@ -106,13 +106,16 @@ class DocumentDefinitionFilter {
               const fieldDirectives = [];
   
               for (const field of node.fields) {
-                let fieldType;
+                let fieldType = field.type;
 
-                if (field.type.type) {
-                  fieldType = field.type.type.type ? field.type.type.type.name.value : field.type.type.name.value;
-                }
-                else {
-                  fieldType = field.type.name.value;
+                //Drill into NonNull and Lists
+                while (fieldType.kind) {
+                  if (fieldType.kind === 'NonNullType' || fieldType.kind === 'ListType') {
+                    fieldType = fieldType.type;
+                  } 
+                  else if (fieldType.kind === 'NamedType') {
+                    fieldType = fieldType.name.value;
+                  } 
                 }
                 
                 if (!DocumentDefinitionFilter.isBuiltInType(fieldType)) {
