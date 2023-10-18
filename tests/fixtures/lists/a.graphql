@@ -1,0 +1,6 @@
+#import B from "b.graphql"
+
+type A {
+  a: String
+  b: [B]!
+}

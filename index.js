@@ -106,7 +106,14 @@ class DocumentDefinitionFilter {
               const fieldDirectives = [];
   
               for (const field of node.fields) {
-                const fieldType = field.type.type ? field.type.type.name.value : field.type.name.value;
+                let fieldType;
+
+                if (field.type.type) {
+                  fieldType = field.type.type.type ? field.type.type.type.name.value : field.type.type.name.value;
+                }
+                else {
+                  fieldType = field.type.name.value;
+                }
                 
                 if (!DocumentDefinitionFilter.isBuiltInType(fieldType)) {
                   fieldTypes.push(fieldType);
@@ -263,4 +270,4 @@ class GraphQLFileLoader {
   }
 }
 
-module.exports = { CachedFileLoader, GraphQLFileLoader, DocumentDefinitionFilter };
+module.exports = { CachedFileLoader, CachedGraphqlParser, GraphQLFileLoader, DocumentDefinitionFilter };
