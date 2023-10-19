@@ -132,42 +132,46 @@ class DocumentDefinitionFilter {
     while (visiting.length > 0) {
       const typeName = visiting.pop();
 
-      if (this._visited.has(typeName)) {
-        continue;
-      }
-
-      this._visited.add(typeName);
-
       //Add this type to dependencies
       dependencies.add(typeName);
 
-      //Figure out what else to visit
+      //Figure out transitive dependencies
       for (const node of document.definitions) {
+        //If this is not an extension and has already been visited, skip it
+        if (node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION ||
+          node.kind === graphql.Kind.UNION_TYPE_DEFINITION ||
+          node.kind === graphql.Kind.ENUM_TYPE_DEFINITION ||
+          node.kind === graphql.Kind.SCALAR_TYPE_DEFINITION ||
+          node.kind === graphql.Kind.DIRECTIVE_DEFINITION ||
+          node.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION ||
+          node.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION) {
+          if (this._visited.has(typeName)) {
+            continue;
+          }
+        }
         if (node.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION && node.name.value === typeName) {
           //Visit the implementations
           visiting.push(...DocumentDefinitionFilter.findImplementationsFor(typeName, document));
           //Visit field types
           addFieldTypes(node);
         }
-        if ((node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION || node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION)&& node.name.value === typeName) {
+        if ((node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION || node.kind === graphql.Kind.OBJECT_TYPE_EXTENSION || node.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION) && node.name.value === typeName) {
           //Visit the directives
           visiting.push(...node.directives.map(directive => directive.name.value));
           //Visit the interfaces
-          visiting.push(...node.interfaces.map(iface => iface.name.value).filter(name => !this._visited.has(name)));
+          if (node.kind !== graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION) {
+            visiting.push(...node.interfaces.map(iface => iface.name.value).filter(name => !this._visited.has(name))); 
+          }
           //Visit field types
           addFieldTypes(node);
         }
-        if (node.kind === graphql.Kind.UNION_TYPE_DEFINITION && node.name.value === typeName) {
+        if ((node.kind === graphql.Kind.UNION_TYPE_DEFINITION || node.kind === graphql.Kind.UNION_TYPE_EXTENSION) && node.name.value === typeName) {
           //Visit the types a union is made up of
           visiting.push(...node.types.map(type => type.name.value));
         }
-        if (node.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION && node.name.value === typeName) {
-          //Visit the directives
-          visiting.push(...node.directives.map(directive => directive.name.value));
-          //Visit field types
-          addFieldTypes(node);
-        }
       }
+
+      this._visited.add(typeName);
     }
 
     //Second pass prunes out anything not in the expanded type list
@@ -183,9 +187,9 @@ class DocumentDefinitionFilter {
         definition.kind === graphql.Kind.SCALAR_TYPE_DEFINITION ||
         definition.kind === graphql.Kind.DIRECTIVE_DEFINITION ||
         definition.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION ||
-        definition.kind === graphql.Kind.INPUT_VALUE_DEFINITION ||
         definition.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION || 
-        definition.kind === graphql.Kind.OBJECT_TYPE_EXTENSION) {
+        definition.kind === graphql.Kind.OBJECT_TYPE_EXTENSION ||
+        definition.kind === graphql.Kind.UNION_TYPE_EXTENSION) {
           if (dependencies.has(definition.name.value)) {
             definitions.push(definition);
           }

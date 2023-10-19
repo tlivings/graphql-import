@@ -1,6 +1,7 @@
-#import B from "b.graphql"
+#import B, U from "b.graphql"
 
 type A {
   a: String
   b: B
+  u: U
 }

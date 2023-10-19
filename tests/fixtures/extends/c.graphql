@@ -2,3 +2,9 @@
 type B {
   b: String
 }
+
+type C {
+  c: String
+}
+
+union U = B | C

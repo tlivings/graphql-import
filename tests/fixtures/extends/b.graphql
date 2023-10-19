@@ -1,5 +1,11 @@
-#import B from "c.graphql"
+#import B, U from "c.graphql"
 
 extend type B {
   c: String
 }
+
+type X {
+  x: String
+}
+
+extend union U = X
