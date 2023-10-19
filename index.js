@@ -156,8 +156,6 @@ class DocumentDefinitionFilter {
           visiting.push(...node.interfaces.map(iface => iface.name.value).filter(name => !this._visited.has(name)));
           //Visit field types
           addFieldTypes(node);
-          //Visit argument types
-          addArgumentTypes(node);
         }
         if (node.kind === graphql.Kind.UNION_TYPE_DEFINITION && node.name.value === typeName) {
           //Visit the types a union is made up of
@@ -165,7 +163,6 @@ class DocumentDefinitionFilter {
         }
         if (node.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION && node.name.value === typeName) {
           addFieldTypes(node);
-          //addArgumentTypes(node);
         }
       }
     }
@@ -217,7 +214,7 @@ class GraphQLFileLoader {
 
       const importLine = line.slice(line.indexOf('import') + 7);
 
-      const regex = /(.+) from \"(.+)\"/;
+      const regex = /(.+) from ["'](.+)["']/;
       const match = regex.exec(importLine);
 
       if (!match) {
