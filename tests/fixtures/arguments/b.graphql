@@ -3,6 +3,6 @@ type B {
   b(c: C): String
 }
 
-type C {
+input C {
   c: String
 }

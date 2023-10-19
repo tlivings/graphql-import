@@ -166,7 +166,7 @@ test('test lists', async (t) => {
   t.end();
 });
 
-test.only('test arguments', async (t) => {
+test('test arguments', async (t) => {
   const expected = await loadFile('fixtures/arguments/expected.graphql');
   
   const loader = new loaders.GraphQLFileLoader();

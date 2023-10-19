@@ -162,6 +162,9 @@ class DocumentDefinitionFilter {
           visiting.push(...node.types.map(type => type.name.value));
         }
         if (node.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION && node.name.value === typeName) {
+          //Visit the directives
+          visiting.push(...node.directives.map(directive => directive.name.value));
+          //Visit field types
           addFieldTypes(node);
         }
       }
@@ -181,7 +184,8 @@ class DocumentDefinitionFilter {
         definition.kind === graphql.Kind.DIRECTIVE_DEFINITION ||
         definition.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION ||
         definition.kind === graphql.Kind.INPUT_VALUE_DEFINITION ||
-        definition.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION) {
+        definition.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION || 
+        definition.kind === graphql.Kind.OBJECT_TYPE_EXTENSION) {
           if (dependencies.has(definition.name.value)) {
             definitions.push(definition);
           }
