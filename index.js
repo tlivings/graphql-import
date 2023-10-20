@@ -3,6 +3,7 @@
 const graphql = require('graphql');
 const fs = require('fs/promises');
 const path = require('path');
+const { type } = require('os');
 
 /**
  * Reads and caches files
@@ -48,6 +49,7 @@ class CachedGraphqlParser {
 
 /**
  * Designed to filter a document object by the given types and their transitive dependencies
+ * TODO: Might make sense to make this specific to unique files or documents
  */
 class DocumentDefinitionFilter {
   constructor() {
@@ -81,21 +83,27 @@ class DocumentDefinitionFilter {
     const dependencies = new Set(types);
     const visiting = [...types];
 
+    const getFieldType = function (field) {
+      let fieldType = field.type;
+
+      //Drill into NonNull and Lists
+      while (fieldType.kind) {
+        if (fieldType.kind === 'NonNullType' || fieldType.kind === 'ListType') {
+          fieldType = fieldType.type;
+        } 
+        else if (fieldType.kind === 'NamedType') {
+          fieldType = fieldType.name.value;
+        } 
+      }
+
+      return fieldType;
+    };
+
     const addFieldTypes = function (node) {
       for (const field of node.fields) {
         addArgumentTypes(field);
 
-        let fieldType = field.type;
-
-        //Drill into NonNull and Lists
-        while (fieldType.kind) {
-          if (fieldType.kind === 'NonNullType' || fieldType.kind === 'ListType') {
-            fieldType = fieldType.type;
-          } 
-          else if (fieldType.kind === 'NamedType') {
-            fieldType = fieldType.name.value;
-          } 
-        }
+        let fieldType = getFieldType(field);
         
         if (!DocumentDefinitionFilter.isBuiltInType(fieldType)) {
           visiting.push(fieldType);
@@ -110,17 +118,7 @@ class DocumentDefinitionFilter {
         return;
       }
       for (const arg of field.arguments) {
-        let argType = arg.type;
-
-        //Drill into NonNull and Lists
-        while (argType.kind) {
-          if (argType.kind === 'NonNullType' || argType.kind === 'ListType') {
-            argType = argType.type;
-          } 
-          else if (argType.kind === 'NamedType') {
-            argType = argType.name.value;
-          } 
-        }
+        let argType = getFieldType(arg);
         
         if (!DocumentDefinitionFilter.isBuiltInType(argType)) {
           visiting.push(argType);
@@ -138,15 +136,16 @@ class DocumentDefinitionFilter {
       //Figure out transitive dependencies
       for (const node of document.definitions) {
         //If this is not an extension and has already been visited, skip it
-        if (node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION ||
-          node.kind === graphql.Kind.UNION_TYPE_DEFINITION ||
-          node.kind === graphql.Kind.ENUM_TYPE_DEFINITION ||
-          node.kind === graphql.Kind.SCALAR_TYPE_DEFINITION ||
-          node.kind === graphql.Kind.DIRECTIVE_DEFINITION ||
-          node.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION ||
-          node.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION) {
-          if (this._visited.has(typeName)) {
-            continue;
+        //Otherwise, if it is an extension or a type that has not been visited, visit it
+        if (this._visited.has(typeName)) {
+          if (node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION ||
+            node.kind === graphql.Kind.UNION_TYPE_DEFINITION ||
+            node.kind === graphql.Kind.ENUM_TYPE_DEFINITION ||
+            node.kind === graphql.Kind.SCALAR_TYPE_DEFINITION ||
+            node.kind === graphql.Kind.DIRECTIVE_DEFINITION ||
+            node.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION ||
+            node.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION) {
+              continue;
           }
         }
         if (node.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION && node.name.value === typeName) {
