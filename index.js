@@ -47,13 +47,23 @@ class CachedGraphqlParser {
   }
 }
 
+// class DocumentDefinition {
+//   constructor() {
+//     this._kind
+//     this._typeName
+//   }
+//   static getTypeName
+// }
+
 /**
  * Designed to filter a document object by the given types and their transitive dependencies
  * TODO: Might make sense to make this specific to unique files or documents
+ * TODO: Spin through document to create a type map first so that you don't have to spin through it multiple times
  */
 class DocumentDefinitionFilter {
   constructor() {
     this._visited = new Set();
+    this._typeMaps = new WeakMap();
   }
   static isBuiltInType(typeName) {
     return (
@@ -64,46 +74,82 @@ class DocumentDefinitionFilter {
       typeName === 'ID'
     );
   }
-  static findImplementationsFor(typeName, document) {
-    const implementations = [];
-
-    for (const node of document.definitions) {
-      if (node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION) {
-        const interfaces = (node.interfaces || []).map(iface => iface.name.value);
-
-        if (interfaces.includes(typeName)) {
-          implementations.push(node.name.value);
-        }
-      }
+  getTypeMapFor(document) {
+    if (this._typeMaps.get(document)) {
+      return this._typeMaps.get(document);
     }
 
-    return implementations;
+    const typeMap = new Map();
+
+    const typeInterfaceMap = {};
+
+    //TODO: handle implementations?
+    for (const node of document.definitions) {
+      const typeName = node.name.value;
+      const value = { ...node };
+
+      if (node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION) {
+        for (const iface of node.interfaces) {
+          const ifaceName = iface.name.value;
+
+          if (!typeInterfaceMap[ifaceName]) {
+            typeInterfaceMap[ifaceName] = [];
+          }
+          typeInterfaceMap[ifaceName].push(typeName);
+        }
+      }
+      if (node.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION) {
+        value.implementations = [];
+      }
+
+      typeMap.set(typeName, value);
+    }
+
+    //Add the implementations to interface types
+    for (const [ ifaceName, types ] of Object.entries(typeInterfaceMap)) {
+      typeMap.get(ifaceName).implementations.push(...types);
+    }
+
+    this._typeMaps.set(document, typeMap);
+
+    return typeMap;
+  }
+  //TODO: Maybe don't need this
+  static unwrapTypeFrom(node) {
+    let type = node.type;
+
+    //Drill into NonNull and Lists
+    while (type.type) {
+      type = type.type;
+    }
+
+    return type;
+  }
+  //TODO: Maybe don't need this
+  static unwrapTypeNameFrom(node) {
+    let type = node.type;
+
+    //Drill into NonNull and Lists
+    while (type.kind) {
+      if (type.kind === graphql.Kind.NON_NULL_TYPE || type.kind === graphql.Kind.LIST_TYPE) {
+        type = type.type;
+      } 
+      else if (type.kind === graphql.Kind.NAMED_TYPE) {
+        type = type.name.value;
+      } 
+    }
+
+    return type;
   }
   filter(document, types) {
     const dependencies = new Set(types);
     const visiting = [...types];
 
-    const getFieldType = function (field) {
-      let fieldType = field.type;
-
-      //Drill into NonNull and Lists
-      while (fieldType.kind) {
-        if (fieldType.kind === 'NonNullType' || fieldType.kind === 'ListType') {
-          fieldType = fieldType.type;
-        } 
-        else if (fieldType.kind === 'NamedType') {
-          fieldType = fieldType.name.value;
-        } 
-      }
-
-      return fieldType;
-    };
-
     const addFieldTypes = function (node) {
       for (const field of node.fields) {
         addArgumentTypes(field);
 
-        let fieldType = getFieldType(field);
+        let fieldType = DocumentDefinitionFilter.unwrapTypeNameFrom(field);
         
         if (!DocumentDefinitionFilter.isBuiltInType(fieldType)) {
           visiting.push(fieldType);
@@ -118,13 +164,15 @@ class DocumentDefinitionFilter {
         return;
       }
       for (const arg of field.arguments) {
-        let argType = getFieldType(arg);
+        let argType = DocumentDefinitionFilter.unwrapTypeNameFrom(arg);
         
         if (!DocumentDefinitionFilter.isBuiltInType(argType)) {
           visiting.push(argType);
         }
       }
     }
+
+    const typeMap = this.getTypeMapFor(document); //Should be cached per document
 
     //First pass finds transitive dependencies
     while (visiting.length > 0) {
@@ -133,45 +181,45 @@ class DocumentDefinitionFilter {
       //Add this type to dependencies
       dependencies.add(typeName);
 
-      //Figure out transitive dependencies
-      for (const node of document.definitions) {
-        //If the name doesn't match the type we're traversing, skip it
-        if (node.name && node.name.value !== typeName) {
-          continue;
+      const definition = typeMap.get(typeName);
+
+      if (!definition) {
+        //TODO: Figure out why this happens when there is a circular dependency
+        continue;
+      }
+
+      //If this is not an extension and has already been visited, skip it
+      //Otherwise, if it is an extension or a type that has not been visited, visit it
+      if (this._visited.has(typeName)) {
+        if (definition.kind === graphql.Kind.OBJECT_TYPE_DEFINITION ||
+          definition.kind === graphql.Kind.UNION_TYPE_DEFINITION ||
+          definition.kind === graphql.Kind.ENUM_TYPE_DEFINITION ||
+          definition.kind === graphql.Kind.SCALAR_TYPE_DEFINITION ||
+          definition.kind === graphql.Kind.DIRECTIVE_DEFINITION ||
+          definition.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION ||
+          definition.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION) {
+            continue;
         }
-        //If this is not an extension and has already been visited, skip it
-        //Otherwise, if it is an extension or a type that has not been visited, visit it
-        if (this._visited.has(typeName)) {
-          if (node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION ||
-            node.kind === graphql.Kind.UNION_TYPE_DEFINITION ||
-            node.kind === graphql.Kind.ENUM_TYPE_DEFINITION ||
-            node.kind === graphql.Kind.SCALAR_TYPE_DEFINITION ||
-            node.kind === graphql.Kind.DIRECTIVE_DEFINITION ||
-            node.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION ||
-            node.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION) {
-              continue;
-          }
+      }
+      if (definition.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION) {
+        //Visit the implementations
+        visiting.push(...definition.implementations);
+        //Visit field types
+        addFieldTypes(definition);
+      }
+      if (definition.kind === graphql.Kind.OBJECT_TYPE_DEFINITION || definition.kind === graphql.Kind.OBJECT_TYPE_EXTENSION || definition.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION) {
+        //Visit the directives
+        visiting.push(...definition.directives.map(directive => directive.name.value));
+        //Visit the interfaces
+        if (definition.kind !== graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION) {
+          visiting.push(...definition.interfaces.map(iface => iface.name.value).filter(name => !this._visited.has(name))); 
         }
-        if (node.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION) {
-          //Visit the implementations
-          visiting.push(...DocumentDefinitionFilter.findImplementationsFor(typeName, document));
-          //Visit field types
-          addFieldTypes(node);
-        }
-        if (node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION || node.kind === graphql.Kind.OBJECT_TYPE_EXTENSION || node.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION) {
-          //Visit the directives
-          visiting.push(...node.directives.map(directive => directive.name.value));
-          //Visit the interfaces
-          if (node.kind !== graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION) {
-            visiting.push(...node.interfaces.map(iface => iface.name.value).filter(name => !this._visited.has(name))); 
-          }
-          //Visit field types
-          addFieldTypes(node);
-        }
-        if (node.kind === graphql.Kind.UNION_TYPE_DEFINITION || node.kind === graphql.Kind.UNION_TYPE_EXTENSION) {
-          //Visit the types a union is made up of
-          visiting.push(...node.types.map(type => type.name.value));
-        }
+        //Visit field types
+        addFieldTypes(definition);
+      }
+      if (definition.kind === graphql.Kind.UNION_TYPE_DEFINITION || definition.kind === graphql.Kind.UNION_TYPE_EXTENSION) {
+        //Visit the types a union is made up of
+        visiting.push(...definition.types.map(type => type.name.value));
       }
 
       this._visited.add(typeName);
