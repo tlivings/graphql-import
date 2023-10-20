@@ -85,6 +85,10 @@ class DocumentDefinitionFilter {
 
     //TODO: handle implementations?
     for (const node of document.definitions) {
+      if (!node.name) {
+        continue;
+      }
+      
       const typeName = node.name.value;
       const value = { ...node };
 
