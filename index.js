@@ -135,6 +135,10 @@ class DocumentDefinitionFilter {
 
       //Figure out transitive dependencies
       for (const node of document.definitions) {
+        //If the name doesn't match the type we're traversing, skip it
+        if (node.name && node.name.value !== typeName) {
+          continue;
+        }
         //If this is not an extension and has already been visited, skip it
         //Otherwise, if it is an extension or a type that has not been visited, visit it
         if (this._visited.has(typeName)) {
@@ -148,13 +152,13 @@ class DocumentDefinitionFilter {
               continue;
           }
         }
-        if (node.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION && node.name.value === typeName) {
+        if (node.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION) {
           //Visit the implementations
           visiting.push(...DocumentDefinitionFilter.findImplementationsFor(typeName, document));
           //Visit field types
           addFieldTypes(node);
         }
-        if ((node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION || node.kind === graphql.Kind.OBJECT_TYPE_EXTENSION || node.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION) && node.name.value === typeName) {
+        if (node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION || node.kind === graphql.Kind.OBJECT_TYPE_EXTENSION || node.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION) {
           //Visit the directives
           visiting.push(...node.directives.map(directive => directive.name.value));
           //Visit the interfaces
@@ -164,7 +168,7 @@ class DocumentDefinitionFilter {
           //Visit field types
           addFieldTypes(node);
         }
-        if ((node.kind === graphql.Kind.UNION_TYPE_DEFINITION || node.kind === graphql.Kind.UNION_TYPE_EXTENSION) && node.name.value === typeName) {
+        if (node.kind === graphql.Kind.UNION_TYPE_DEFINITION || node.kind === graphql.Kind.UNION_TYPE_EXTENSION) {
           //Visit the types a union is made up of
           visiting.push(...node.types.map(type => type.name.value));
         }
