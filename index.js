@@ -83,15 +83,15 @@ class DocumentDefinitionFilter {
 
     const typeInterfaceMap = {};
 
-    //TODO: handle implementations?
     for (const node of document.definitions) {
       if (!node.name) {
         continue;
       }
-      
+
       const typeName = node.name.value;
       const value = { ...node };
 
+      //Build a map of interfaces to types
       if (node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION) {
         for (const iface of node.interfaces) {
           const ifaceName = iface.name.value;
@@ -102,6 +102,7 @@ class DocumentDefinitionFilter {
           typeInterfaceMap[ifaceName].push(typeName);
         }
       }
+      //Later we want to track implementations of this interface
       if (node.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION) {
         value.implementations = [];
       }
@@ -118,18 +119,6 @@ class DocumentDefinitionFilter {
 
     return typeMap;
   }
-  //TODO: Maybe don't need this
-  static unwrapTypeFrom(node) {
-    let type = node.type;
-
-    //Drill into NonNull and Lists
-    while (type.type) {
-      type = type.type;
-    }
-
-    return type;
-  }
-  //TODO: Maybe don't need this
   static unwrapTypeNameFrom(node) {
     let type = node.type;
 
