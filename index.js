@@ -3,7 +3,6 @@
 const graphql = require('graphql');
 const fs = require('fs/promises');
 const path = require('path');
-const { type } = require('os');
 
 /**
  * Reads and caches files
