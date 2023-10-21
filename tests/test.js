@@ -197,3 +197,19 @@ test('test arguments', async (t) => {
   
   t.end();
 });
+
+test('test scalars', async (t) => {
+  const expected = await loadFile('fixtures/scalars/expected.graphql');
+  
+  const loader = new loaders.GraphQLFileLoader();
+
+  const contents = await loader.loadFile(__dirname, 'fixtures/scalars/a.graphql');
+
+  t.equal(contents, expected);
+
+  t.doesNotThrow(() => {
+    graphql.validateSchema(graphql.buildSchema(contents));
+  });
+  
+  t.end();
+});
