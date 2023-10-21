@@ -192,7 +192,7 @@ class DocumentDefinitionFilter {
       }
     }
 
-    const visitDefinition = function (definition) {
+    const addTransitiveTypes = function (definition) {
       if (definition.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION || definition.kind === graphql.Kind.INTERFACE_TYPE_EXTENSION) {
         addFieldTypes(definition);
       }
@@ -218,57 +218,53 @@ class DocumentDefinitionFilter {
     while (visiting.length > 0) {
       const typeName = visiting.pop();
 
+      dependencies.add(typeName);
+
       const definition = typeMap.types[typeName];
       const extensions = typeMap.typeExtensions[typeName] || [];
       const implementations = typeMap.typeInterface[typeName] || []
 
-      //Add dependencies
+      //Add dependencies for definition
       if (definition) {
+        //If we've already seen this definition we can skip it
         if (!this._visited.has(typeName)) {
-          dependencies.add(typeName);
-          visitDefinition(definition);
+          addTransitiveTypes(definition);
+
+          //Visit the implementations of this type if its a interface
+          if (definition.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION || graphql.Kind.INTERFACE_TYPE_EXTENSION) {
+            for (const impl of implementations) {
+              visiting.push(impl);
+            }
+          }
+          
           this._visited.add(typeName);
         }
-        for (const impl of implementations) {
-          visiting.push(impl);
-        }
-        for (const extension of extensions) {
-          visitDefinition(extension);
-        }
       }
+      //There might still be an extension definition even if locally, in this document, there is no type
       else {
         for (const extension of extensions) {
-          visitDefinition(extension);
+          addTransitiveTypes(extension);
         }
       }
     }
 
     //Second pass prunes out anything not in the expanded type list
-    const definitions = [];
-
-    for (const definition of document.definitions) {
-      if (!definition.name) {
-        definitions.push(definition);
+    return graphql.visit(document, {
+      enter(node) {
+        if (node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION ||
+          node.kind === graphql.Kind.UNION_TYPE_DEFINITION ||
+          node.kind === graphql.Kind.ENUM_TYPE_DEFINITION ||
+          node.kind === graphql.Kind.SCALAR_TYPE_DEFINITION ||
+          node.kind === graphql.Kind.DIRECTIVE_DEFINITION ||
+          node.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION ||
+          node.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION || 
+          DocumentDefinitionFilter.extensionType(node)) {
+            if (!dependencies.has(node.name.value)) {
+              return null;
+            }
+        }
       }
-      if (definition.kind === graphql.Kind.OBJECT_TYPE_DEFINITION ||
-        definition.kind === graphql.Kind.UNION_TYPE_DEFINITION ||
-        definition.kind === graphql.Kind.ENUM_TYPE_DEFINITION ||
-        definition.kind === graphql.Kind.SCALAR_TYPE_DEFINITION ||
-        definition.kind === graphql.Kind.DIRECTIVE_DEFINITION ||
-        definition.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION ||
-        definition.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION || 
-        definition.kind === graphql.Kind.OBJECT_TYPE_EXTENSION ||
-        definition.kind === graphql.Kind.UNION_TYPE_EXTENSION) {
-          if (dependencies.has(definition.name.value)) {
-            definitions.push(definition);
-          }
-      }
-    }
-
-    return {
-      kind: 'Document',
-      definitions
-    };
+    });
   }
 }
 
