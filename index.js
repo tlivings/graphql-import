@@ -80,6 +80,17 @@ class DocumentDefinitionFilter {
 
     const typeExtensions = {};
 
+    const addInterfaces = function (typeName, node) {
+      for (const iface of node.interfaces) {
+        const ifaceName = iface.name.value;
+
+        if (!typeInterface[ifaceName]) {
+          typeInterface[ifaceName] = [];
+        }
+        typeInterface[ifaceName].push(typeName);
+      } 
+    };
+
     for (const node of document.definitions) {
       if (!node.name) {
         continue;
@@ -95,15 +106,7 @@ class DocumentDefinitionFilter {
           typeExtensions[typeName].push(node);
 
           if (node.kind === graphql.Kind.OBJECT_TYPE_EXTENSION) {
-            //TODO: Don't repeat yourself here
-            for (const iface of node.interfaces) {
-              const ifaceName = iface.name.value;
-    
-              if (!typeInterface[ifaceName]) {
-                typeInterface[ifaceName] = [];
-              }
-              typeInterface[ifaceName].push(typeName);
-            } 
+            addInterfaces(typeName, node);
           }
 
           continue;
@@ -111,15 +114,7 @@ class DocumentDefinitionFilter {
 
       //Build a map of interfaces to types
       if (node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION) {
-        //TODO: Don't repeat yourself
-        for (const iface of node.interfaces) {
-          const ifaceName = iface.name.value;
-
-          if (!typeInterface[ifaceName]) {
-            typeInterface[ifaceName] = [];
-          }
-          typeInterface[ifaceName].push(typeName);
-        }
+        addInterfaces(typeName, node);
       }
 
       types[typeName] = node;
