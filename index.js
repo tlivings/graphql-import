@@ -75,9 +75,7 @@ class DocumentDefinitionFilter {
     }
 
     const types = {};
-
     const typeInterface = {};
-
     const typeExtensions = {};
 
     const addInterfaces = function (typeName, node) {
@@ -263,7 +261,9 @@ class GraphQLFileLoader {
     this._graphqlParser = new CachedGraphqlParser();
     this._definitionFilter = new DocumentDefinitionFilter();
   }
-  static parseImportStatements(basePath, fileContents) {
+  parseImportStatements(filePath, fileContents) {
+    const basePath = path.dirname(filePath);
+
     const imports = [];
 
     for (const line of fileContents.split(/\r?\n/).map((l) => l.trim())) {
@@ -292,7 +292,7 @@ class GraphQLFileLoader {
 
     return imports;
   }
-  async buildImportsListFrom(fileName) {
+  async buildImportDependencyTreeFrom(fileName) {
     const files = [fileName];
     const visited = new Set();
     const imports = new Map();
@@ -308,11 +308,9 @@ class GraphQLFileLoader {
   
       visited.add(file);
   
-      const basePath = path.dirname(file);
-  
       const fileContents = await this._fileLoader.loadFile(file);
       
-      const importStatements = GraphQLFileLoader.parseImportStatements(basePath, fileContents);
+      const importStatements = this.parseImportStatements(file, fileContents);
   
       if (importStatements.length) {
         for (const { types, fileName } of importStatements) {
@@ -331,8 +329,8 @@ class GraphQLFileLoader {
     const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(cwd, filePath);
     const definitions = [];
 
-    //Build a dependency tree
-    const imports = await this.buildImportsListFrom(absolutePath);
+    //Build a dependency tree starting with the provided filePath
+    const imports = await this.buildImportDependencyTreeFrom(absolutePath);
 
     //Make a copy so we can reverse-process from bottom to top
     const entries = [...imports.entries()];
