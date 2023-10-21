@@ -46,14 +46,6 @@ class CachedGraphqlParser {
   }
 }
 
-// class DocumentDefinition {
-//   constructor() {
-//     this._kind
-//     this._typeName
-//   }
-//   static getTypeName
-// }
-
 /**
  * Designed to filter a document object by the given types and their transitive dependencies
  */
