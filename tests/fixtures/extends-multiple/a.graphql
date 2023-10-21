@@ -1,0 +1,10 @@
+#import B from "b.graphql"
+
+extend type B {
+  d: String
+}
+
+type A {
+  a: String
+  b: B
+}

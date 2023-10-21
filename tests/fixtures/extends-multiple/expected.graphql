@@ -1,0 +1,18 @@
+type B {
+  b: String
+}
+
+directive @someDirective on OBJECT
+
+extend type B @someDirective {
+  c: String
+}
+
+extend type B {
+  d: String
+}
+
+type A {
+  a: String
+  b: B
+}
