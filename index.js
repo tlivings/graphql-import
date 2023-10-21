@@ -57,8 +57,6 @@ class CachedGraphqlParser {
 
 /**
  * Designed to filter a document object by the given types and their transitive dependencies
- * TODO: Might make sense to make this specific to unique files or documents
- * TODO: Spin through document to create a type map first so that you don't have to spin through it multiple times
  */
 class DocumentDefinitionFilter {
   constructor() {
@@ -74,14 +72,22 @@ class DocumentDefinitionFilter {
       typeName === 'ID'
     );
   }
+  /**
+   * This builds a type map for the given AST document so we don't have to keep iterating through 
+   * it while building a dependency tree.
+   * @param {*} document 
+   * @returns 
+   */
   getTypeMapFor(document) {
     if (this._typeMaps.get(document)) {
       return this._typeMaps.get(document);
     }
 
-    const typeMap = new Map();
+    const types = {};
 
-    const typeInterfaceMap = {};
+    const typeInterface = {};
+
+    const typeExtensions = {};
 
     for (const node of document.definitions) {
       if (!node.name) {
@@ -89,35 +95,48 @@ class DocumentDefinitionFilter {
       }
 
       const typeName = node.name.value;
-      const value = { ...node };
+
+      //If this is an extension, capture it and then add it later
+      if (DocumentDefinitionFilter.extensionType(node)) {
+          if (!typeExtensions[typeName]) {
+            typeExtensions[typeName] = [];
+          }
+          typeExtensions[typeName].push(node);
+
+          if (node.kind === graphql.Kind.OBJECT_TYPE_EXTENSION) {
+            //TODO: Don't repeat yourself here
+            for (const iface of node.interfaces) {
+              const ifaceName = iface.name.value;
+    
+              if (!typeInterface[ifaceName]) {
+                typeInterface[ifaceName] = [];
+              }
+              typeInterface[ifaceName].push(typeName);
+            } 
+          }
+
+          continue;
+      }
 
       //Build a map of interfaces to types
       if (node.kind === graphql.Kind.OBJECT_TYPE_DEFINITION) {
+        //TODO: Don't repeat yourself
         for (const iface of node.interfaces) {
           const ifaceName = iface.name.value;
 
-          if (!typeInterfaceMap[ifaceName]) {
-            typeInterfaceMap[ifaceName] = [];
+          if (!typeInterface[ifaceName]) {
+            typeInterface[ifaceName] = [];
           }
-          typeInterfaceMap[ifaceName].push(typeName);
+          typeInterface[ifaceName].push(typeName);
         }
       }
-      //Later we want to track implementations of this interface
-      if (node.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION) {
-        value.implementations = [];
-      }
 
-      typeMap.set(typeName, value);
+      types[typeName] = node;
     }
 
-    //Add the implementations to interface types
-    for (const [ ifaceName, types ] of Object.entries(typeInterfaceMap)) {
-      typeMap.get(ifaceName).implementations.push(...types);
-    }
+    this._typeMaps.set(document, { types, typeInterface, typeExtensions});
 
-    this._typeMaps.set(document, typeMap);
-
-    return typeMap;
+    return this._typeMaps.get(document);
   }
   static unwrapTypeNameFrom(node) {
     let type = node.type;
@@ -133,6 +152,14 @@ class DocumentDefinitionFilter {
     }
 
     return type;
+  }
+  static extensionType(definition) {
+    return definition.kind === graphql.Kind.OBJECT_TYPE_EXTENSION ||
+    definition.kind === graphql.Kind.UNION_TYPE_EXTENSION ||
+    definition.kind === graphql.Kind.INTERFACE_TYPE_EXTENSION ||
+    definition.kind === graphql.Kind.SCALAR_TYPE_EXTENSION ||
+    definition.kind === graphql.Kind.INPUT_OBJECT_TYPE_EXTENSION ||
+    definition.kind === graphql.Kind.ENUM_TYPE_EXTENSION;
   }
   filter(document, types) {
     const dependencies = new Set(types);
@@ -165,57 +192,55 @@ class DocumentDefinitionFilter {
       }
     }
 
+    const visitDefinition = function (definition) {
+      if (definition.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION || definition.kind === graphql.Kind.INTERFACE_TYPE_EXTENSION) {
+        addFieldTypes(definition);
+      }
+      else if (definition.kind === graphql.Kind.OBJECT_TYPE_DEFINITION || definition.kind === graphql.Kind.OBJECT_TYPE_EXTENSION || definition.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION) {
+        //Visit the directives
+        visiting.push(...definition.directives.map(directive => directive.name.value));
+        //Visit the interfaces
+        if (definition.kind !== graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION) {
+          visiting.push(...definition.interfaces.map(iface => iface.name.value)); 
+        }
+        //Visit field types
+        addFieldTypes(definition);
+      }
+      else if (definition.kind === graphql.Kind.UNION_TYPE_DEFINITION || definition.kind === graphql.Kind.UNION_TYPE_EXTENSION) {
+        //Visit the types a union is made up of
+        visiting.push(...definition.types.map(type => type.name.value));
+      }
+    };
+
     const typeMap = this.getTypeMapFor(document); //Should be cached per document
 
     //First pass finds transitive dependencies
     while (visiting.length > 0) {
       const typeName = visiting.pop();
 
-      //Add this type to dependencies
-      dependencies.add(typeName);
+      const definition = typeMap.types[typeName];
+      const extensions = typeMap.typeExtensions[typeName] || [];
+      const implementations = typeMap.typeInterface[typeName] || []
 
-      const definition = typeMap.get(typeName);
-
-      if (!definition) {
-        //TODO: Figure out why this happens when there is a circular dependency
-        continue;
-      }
-
-      //If this is not an extension and has already been visited, skip it
-      //Otherwise, if it is an extension or a type that has not been visited, visit it
-      if (this._visited.has(typeName)) {
-        if (definition.kind === graphql.Kind.OBJECT_TYPE_DEFINITION ||
-          definition.kind === graphql.Kind.UNION_TYPE_DEFINITION ||
-          definition.kind === graphql.Kind.ENUM_TYPE_DEFINITION ||
-          definition.kind === graphql.Kind.SCALAR_TYPE_DEFINITION ||
-          definition.kind === graphql.Kind.DIRECTIVE_DEFINITION ||
-          definition.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION ||
-          definition.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION) {
-            continue;
+      //Add dependencies
+      if (definition) {
+        if (!this._visited.has(typeName)) {
+          dependencies.add(typeName);
+          visitDefinition(definition);
+          this._visited.add(typeName);
+        }
+        for (const impl of implementations) {
+          visiting.push(impl);
+        }
+        for (const extension of extensions) {
+          visitDefinition(extension);
         }
       }
-      if (definition.kind === graphql.Kind.INTERFACE_TYPE_DEFINITION) {
-        //Visit the implementations
-        visiting.push(...definition.implementations);
-        //Visit field types
-        addFieldTypes(definition);
-      }
-      if (definition.kind === graphql.Kind.OBJECT_TYPE_DEFINITION || definition.kind === graphql.Kind.OBJECT_TYPE_EXTENSION || definition.kind === graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION) {
-        //Visit the directives
-        visiting.push(...definition.directives.map(directive => directive.name.value));
-        //Visit the interfaces
-        if (definition.kind !== graphql.Kind.INPUT_OBJECT_TYPE_DEFINITION) {
-          visiting.push(...definition.interfaces.map(iface => iface.name.value).filter(name => !this._visited.has(name))); 
+      else {
+        for (const extension of extensions) {
+          visitDefinition(extension);
         }
-        //Visit field types
-        addFieldTypes(definition);
       }
-      if (definition.kind === graphql.Kind.UNION_TYPE_DEFINITION || definition.kind === graphql.Kind.UNION_TYPE_EXTENSION) {
-        //Visit the types a union is made up of
-        visiting.push(...definition.types.map(type => type.name.value));
-      }
-
-      this._visited.add(typeName);
     }
 
     //Second pass prunes out anything not in the expanded type list
