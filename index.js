@@ -99,7 +99,7 @@ class GraphQLFileLoader {
    * @param {*} filePath 
    * @returns 
    */
-  async loadFile(cwd = __dirname, filePath, { skipGraphQLImport }) {
+  async loadFile(cwd = __dirname, filePath, { skipGraphQLImport = false } = {}) {
     const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(cwd, filePath);
     const definitions = [];
 
@@ -137,7 +137,7 @@ class GraphQLFileLoader {
       definitions
     });
   }
-  async loadAllContent(pointer, { cwd =  process.cwd(), skipGraphQLImport = false, ignore = [] }) {
+  async loadAllContent(pointer, { cwd =  process.cwd(), skipGraphQLImport = false, ignore = [] } = {}) {
     const files = await glob(pointer, {
       cwd,
       ignore
@@ -152,7 +152,7 @@ class GraphQLFileLoader {
    * @param {*} pointer 
    * @param {*} options 
    */
-  async load(pointer, { cwd =  process.cwd(), skipGraphQLImport = false, ignore = [] }) {
+  async load(pointer, { cwd =  process.cwd(), skipGraphQLImport = false, ignore = [] } = {}) {
     const sources = await this.loadAllContent(pointer, { cwd, skipGraphQLImport, ignore });
 
     return sources.map(rawSDL => ({ rawSDL }));

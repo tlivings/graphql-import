@@ -215,7 +215,7 @@ test('test scalars', async (t) => {
   t.end();
 });
 
-test.only('test graphql tools loader', async (t) => {
+test('test graphql tools loader', async (t) => {
   const schema = await loadSchema('fixtures/extends/*.graphql', {
     cwd: __dirname,
     ignore: ['*/**/expected.graphql'],
