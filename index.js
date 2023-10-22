@@ -2,6 +2,7 @@
 
 const graphql = require('graphql');
 const path = require('path');
+const glob = require('glob-promise');
 const { CachedFileLoader } = require('./lib/CachedFileLoader');
 const { CachedGraphqlParser } = require('./lib/CachedGraphqlParser');
 const { DocumentDefinitionFilter } = require('./lib/DocumentDefinitionFilter');
@@ -98,9 +99,13 @@ class GraphQLFileLoader {
    * @param {*} filePath 
    * @returns 
    */
-  async loadFile(cwd = __dirname, filePath) {
+  async loadFile(cwd = __dirname, filePath, { skipGraphQLImport }) {
     const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(cwd, filePath);
     const definitions = [];
+
+    if (skipGraphQLImport) {
+      return await this._fileLoader.loadFile(absolutePath);
+    }
 
     //Build a dependency tree starting with the provided filePath
     const imports = await this.buildImportDependencyTreeFrom(absolutePath);
@@ -131,6 +136,26 @@ class GraphQLFileLoader {
       kind: 'Document',
       definitions
     });
+  }
+  async loadAllContent(pointer, { cwd =  process.cwd(), skipGraphQLImport = false, ignore = [] }) {
+    const files = await glob(pointer, {
+      cwd,
+      ignore
+    });
+
+    return Promise.all(files.map(file => {
+      return this.loadFile(cwd, file, { skipGraphQLImport });
+    }));
+  }
+  /**
+   * Conforms to the loader interface in graphql-tools
+   * @param {*} pointer 
+   * @param {*} options 
+   */
+  async load(pointer, { cwd =  process.cwd(), skipGraphQLImport = false, ignore = [] }) {
+    const sources = await this.loadAllContent(pointer, { cwd, skipGraphQLImport, ignore });
+
+    return sources.map(rawSDL => ({ rawSDL }));
   }
 }
 

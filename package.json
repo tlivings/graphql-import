@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@graphql-tools/load": "^8.0.0",
+    "glob-promise": "^6.0.5",
     "graphql": "^16.8.1",
     "tape": "^5.7.1"
   }

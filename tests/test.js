@@ -5,6 +5,7 @@ const path = require('path');
 const test = require('tape');
 const loaders = require('..');
 const graphql = require('graphql');
+const { loadSchema } = require('@graphql-tools/load');
 
 const loadFile = async function (fileName) {
   return (await fs.readFile(path.resolve(__dirname, fileName))).toString().trim();
@@ -209,6 +210,22 @@ test('test scalars', async (t) => {
 
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
+  });
+  
+  t.end();
+});
+
+test.only('test graphql tools loader', async (t) => {
+  
+  const schema = await loadSchema('fixtures/extends/*.graphql', {
+    cwd: __dirname,
+    ignore: ['*/**/expected.graphql'],
+    skipGraphQLImport: true,
+    loaders: [new loaders.GraphQLFileLoader()]
+  });
+
+  t.doesNotThrow(() => {
+    graphql.validateSchema(schema);
   });
   
   t.end();
