@@ -10,7 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "glob-promise": "^6.0.5",
-    "graphql": "^16.8.1",
+    "graphql": "^16.8.1"
   },
   "devDependencies": {
     "@graphql-tools/load": "^8.0.0",
