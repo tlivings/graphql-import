@@ -215,6 +215,24 @@ test('test scalars', async (t) => {
   t.end();
 });
 
+test('test enums', async (t) => {
+  const expected = await loadFile('fixtures/enums/expected.graphql');
+  
+  const loader = new loaders.GraphQLFileLoader();
+
+  const contents = await loader.loadFile(__dirname, 'fixtures/enums/a.graphql');
+
+  //console.log(contents);
+
+  t.equal(contents, expected);
+
+  t.doesNotThrow(() => {
+    graphql.validateSchema(graphql.buildSchema(contents));
+  });
+  
+  t.end();
+});
+
 test('test graphql tools loader', async (t) => {
   const schema = await loadSchema('fixtures/extends/*.graphql', {
     cwd: __dirname,

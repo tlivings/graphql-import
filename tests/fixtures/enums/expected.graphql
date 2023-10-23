@@ -1,0 +1,20 @@
+directive @someDirective on ENUM_VALUE
+
+enum E {
+  X @someDirective
+  Y
+  Z
+}
+
+type C {
+  c: E!
+}
+
+type B {
+  b: [C!]
+}
+
+type A {
+  a: String
+  b: B
+}

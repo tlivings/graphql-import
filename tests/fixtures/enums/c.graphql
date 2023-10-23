@@ -1,0 +1,11 @@
+directive @someDirective on ENUM_VALUE
+
+enum E {
+  X @someDirective
+  Y
+  Z
+}
+
+type C {
+  c: E!
+}
