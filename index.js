@@ -130,6 +130,7 @@ class GraphQLFileLoader {
       const filteredDocument = this._definitionFilter.filter(document, definitions, types);
       const filteredDefinitions = [];
       
+      //Only collect dependencies once
       for (const definition of filteredDocument.definitions) {
         const definitionName = definition.name && definition.kind+definition.name.value;
 

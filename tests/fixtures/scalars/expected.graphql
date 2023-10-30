@@ -1,11 +1,5 @@
 scalar B
 
-{
-  X
-  Y
-  Z
-}
-
 type A {
   a: String
   b: B
