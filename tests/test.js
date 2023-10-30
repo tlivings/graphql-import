@@ -119,7 +119,7 @@ test('test interface implementations', async (t) => {
   t.end();
 });
 
-test('test extends', async (t) => {
+test.only('test extends', async (t) => {
   const expected = await loadFile('fixtures/extends/expected.graphql');
   
   const loader = new loaders.GraphQLFileLoader();

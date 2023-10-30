@@ -1,0 +1,15 @@
+type Query {
+  unused: String
+}
+
+type C {
+  c: String
+}
+
+type D {
+  d: String
+}
+
+type E {
+  e: String
+}

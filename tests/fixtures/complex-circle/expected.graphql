@@ -1,0 +1,20 @@
+type A {
+  a: String
+}
+
+type B {
+  a: A
+  b: String
+}
+
+type C {
+  a: A
+  b: B
+  c: String
+}
+
+type Query {
+  a: A
+  b: B
+  c: C
+}

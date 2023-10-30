@@ -1,0 +1,18 @@
+type C {
+  c: String
+}
+
+type D {
+  d: String
+}
+
+type B {
+  b: String
+  d: D
+}
+
+union A = B | C
+
+type Query {
+  b: A
+}

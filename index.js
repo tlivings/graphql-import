@@ -102,6 +102,7 @@ class GraphQLFileLoader {
   async loadFile(cwd = __dirname, filePath, { skipGraphQLImport = false } = {}) {
     const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(cwd, filePath);
     const definitions = [];
+    const definitionsAdded = new Set();
 
     if (skipGraphQLImport) {
       return await this._fileLoader.loadFile(absolutePath);
@@ -114,7 +115,7 @@ class GraphQLFileLoader {
     const entries = [...imports.entries()];
 
     //This iterates through imports, parses graphql, and prunes out the requests types
-    while (entries.length > 0) {
+    while (entries.length > 1) {
       const [fileName, types] = entries.pop();
 
       const file = await this._fileLoader.loadFile(fileName); //This file is already cached from earlier
@@ -126,16 +127,39 @@ class GraphQLFileLoader {
       }
 
       //Filter by types and their transitive dependencies
-      const filteredDocument = this._definitionFilter.filter(document, types);
+      const filteredDocument = this._definitionFilter.filter(document, definitions, types);
+      const filteredDefinitions = [];
+      
+      for (const definition of filteredDocument.definitions) {
+        const definitionName = definition.name && definition.kind+definition.name.value;
 
-      definitions.push(...filteredDocument.definitions);
+        if (!definitionName || definitionsAdded.has(definitionName)) {
+          continue;
+        }
+
+        filteredDefinitions.push(definition);
+        definitionsAdded.add(definitionName);
+      }
+      definitions.push(...filteredDefinitions);
     }
 
-    //This is the merged SDL which we can parse into a schema etc
-    return graphql.print({
-      kind: 'Document',
-      definitions
+    //The root document
+    const [fileName] = entries.pop();
+
+    const file = await this._fileLoader.loadFile(fileName); //This file is already cached from earlier
+    const document = this._graphqlParser.parse(fileName, file);
+
+    const types = document.definitions.map((definition) => {
+      if (definition.name) {
+        return definition.name.value;
+      }
     });
+
+    //Filter by types and their transitive dependencies
+    const filteredDocument = this._definitionFilter.filter(document, definitions, types);
+
+    //This is the merged SDL which we can parse into a schema etc
+    return graphql.print(filteredDocument);
   }
   async loadAllContent(pointer, { cwd =  process.cwd(), skipGraphQLImport = false, ignore = [] } = {}) {
     const files = await glob(pointer, {

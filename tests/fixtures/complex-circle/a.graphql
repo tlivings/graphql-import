@@ -1,0 +1,12 @@
+#import B from "b.graphql"
+#import C from "c.graphql"
+
+type A {
+  a: String
+}
+
+type Query {
+  a: A
+  b: B
+  c: C
+}
