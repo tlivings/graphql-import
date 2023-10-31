@@ -2,19 +2,19 @@ type B {
   b: String
 }
 
-type C {
+extend type B {
   c: String
 }
 
-union U = B | C
-
-extend type B {
+type C {
   c: String
 }
 
 type X {
   x: String
 }
+
+union U = B | C
 
 extend union U = X
 

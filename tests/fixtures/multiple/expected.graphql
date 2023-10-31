@@ -1,9 +1,9 @@
-type C {
-  c: String
-}
-
 type B {
   b: String
+}
+
+type C {
+  c: String
 }
 
 type A {

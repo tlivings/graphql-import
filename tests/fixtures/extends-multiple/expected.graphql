@@ -1,8 +1,8 @@
+directive @someDirective on OBJECT
+
 type B {
   b: String
 }
-
-directive @someDirective on OBJECT
 
 extend type B @someDirective {
   c: String

@@ -1,10 +1,9 @@
+input C {
+  c: String
+}
 
 type B {
   b(c: C): String
-}
-
-input C {
-  c: String
 }
 
 type A {

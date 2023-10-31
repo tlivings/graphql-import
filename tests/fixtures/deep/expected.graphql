@@ -1,6 +1,5 @@
-type B {
-  b: String
-  c: C
+type D {
+  d: String
 }
 
 type C {
@@ -8,8 +7,9 @@ type C {
   d: D
 }
 
-type D {
-  d: String
+type B {
+  b: String
+  c: C
 }
 
 type A {

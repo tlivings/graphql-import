@@ -1,8 +1,8 @@
-directive @someDirective on FIELD_DEFINITION
-
 interface I {
   i: String
 }
+
+directive @someDirective on FIELD_DEFINITION
 
 type B implements I {
   i: String

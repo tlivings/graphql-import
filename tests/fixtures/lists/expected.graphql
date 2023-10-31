@@ -1,10 +1,10 @@
+type C {
+  c: String
+}
+
 type B {
   b: String!
   c: [C]!
-}
-
-type C {
-  c: String
 }
 
 type A {
