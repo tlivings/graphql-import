@@ -1,4 +1,6 @@
-scalar B
+directive @someDirective on SCALAR
+
+scalar B @someDirective
 
 type A {
   a: String

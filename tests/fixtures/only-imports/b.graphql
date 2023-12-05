@@ -1,13 +1,11 @@
+type A {
+  a: String
+}
+
 type B {
   b: String
-  c: C
 }
 
 type C {
   c: String
-  d: D
-}
-
-type D {
-  d: String
 }

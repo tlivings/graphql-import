@@ -20,7 +20,7 @@ class GraphQLFileLoader {
    * Parse #import statements in the given file contents
    * @param {*} filePath the path of the file from which to build relative paths from
    * @param {*} fileContents the contents of the file
-   * @returns 
+   * @returns
    */
   static parseImportStatements(filePath, fileContents) {
     const basePath = path.dirname(filePath);
@@ -41,13 +41,18 @@ class GraphQLFileLoader {
         throw new Error('Incorrect import syntax');
       }
 
-      const types = match[1].trim().split(',').map((t) => t.trim());
+      const types = match[1]
+        .trim()
+        .split(',')
+        .map((t) => t.trim());
       const specifiedPath = match[2].trim();
-      const fileName = path.isAbsolute(specifiedPath) ? specifiedPath : path.resolve(basePath, specifiedPath);
+      const fileName = path.isAbsolute(specifiedPath)
+        ? specifiedPath
+        : path.resolve(basePath, specifiedPath);
 
       imports.push({
         types,
-        fileName
+        fileName,
       });
     }
 
@@ -56,7 +61,7 @@ class GraphQLFileLoader {
   /**
    * Builds a dependency map starting with the given file.
    * @param {*} fileName the name of the file to start with.
-   * @returns 
+   * @returns
    */
   async buildImportDependencyTreeFrom(fileName) {
     const files = [fileName];
@@ -95,9 +100,9 @@ class GraphQLFileLoader {
   }
   /**
    * Loads a graphql sdl file and parses the imports and returns a merged SDL with all imports resolved.
-   * @param {*} cwd 
-   * @param {*} filePath 
-   * @returns 
+   * @param {*} cwd
+   * @param {*} filePath
+   * @returns
    */
   async loadFile(cwd = __dirname, filePath, { skipGraphQLImport = false } = {}) {
     const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(cwd, filePath);
@@ -129,10 +134,10 @@ class GraphQLFileLoader {
       //Filter by types and their transitive dependencies
       const filteredDocument = this._definitionFilter.filter(document, definitions, types);
       const filteredDefinitions = [];
-      
+
       //Only collect dependencies once
       for (const definition of filteredDocument.definitions) {
-        const definitionName = definition.name && definition.kind+definition.name.value;
+        const definitionName = definition.name && definition.kind + definition.name.value;
 
         if (!definitionName || definitionsAdded.has(definitionName)) {
           continue;
@@ -148,8 +153,27 @@ class GraphQLFileLoader {
     const [fileName] = entries.pop();
 
     const file = await this._fileLoader.loadFile(fileName); //This file is already cached from earlier
-    const document = this._graphqlParser.parse(fileName, file);
 
+    let document;
+
+    try {
+      document = this._graphqlParser.parse(fileName, file);
+    } catch (error) {
+      //Nothing was even processed
+      if (!definitions.length) {
+        throw error;
+      }
+
+      //We know we were able to build a dependency tree from the root,
+      //so likely the root simply doesn't have any definitions of its own.
+      //Return the resolved dependency definitions.
+      return graphql.print({
+        kind: graphql.Kind.DOCUMENT,
+        definitions,
+      });
+    }
+
+    //Get the defined type names
     const types = document.definitions.map((definition) => {
       if (definition.name) {
         return definition.name.value;
@@ -162,26 +186,40 @@ class GraphQLFileLoader {
     //This is the merged SDL which we can parse into a schema etc
     return graphql.print(filteredDocument);
   }
-  async loadAllContent(pointer, { cwd =  process.cwd(), skipGraphQLImport = false, ignore = [] } = {}) {
+  async loadAllContent(
+    pointer,
+    { cwd = process.cwd(), skipGraphQLImport = false, ignore = [] } = {},
+  ) {
     const files = await glob(pointer, {
       cwd,
-      ignore
+      ignore,
     });
 
-    return Promise.all(files.map(file => {
-      return this.loadFile(cwd, file, { skipGraphQLImport });
-    }));
+    return Promise.all(
+      files.map((file) => {
+        return this.loadFile(cwd, file, { skipGraphQLImport });
+      }),
+    );
   }
   /**
    * Conforms to the loader interface in graphql-tools
-   * @param {*} pointer 
-   * @param {*} options 
+   * @param {*} pointer
+   * @param {*} options
    */
-  async load(pointer, { cwd =  process.cwd(), skipGraphQLImport = false, ignore = [] } = {}) {
-    const sources = await this.loadAllContent(pointer, { cwd, skipGraphQLImport, ignore });
+  async load(pointer, { cwd = process.cwd(), skipGraphQLImport = false, ignore = [] } = {}) {
+    const sources = await this.loadAllContent(pointer, {
+      cwd,
+      skipGraphQLImport,
+      ignore,
+    });
 
-    return sources.map(rawSDL => ({ rawSDL }));
+    return sources.map((rawSDL) => ({ rawSDL }));
   }
 }
 
-module.exports = { CachedFileLoader, CachedGraphqlParser, GraphQLFileLoader, DocumentDefinitionFilter };
+module.exports = {
+  CachedFileLoader,
+  CachedGraphqlParser,
+  GraphQLFileLoader,
+  DocumentDefinitionFilter,
+};

@@ -9,11 +9,11 @@ const { loadSchema } = require('@graphql-tools/load');
 
 const loadFile = async function (fileName) {
   return (await fs.readFile(path.resolve(__dirname, fileName))).toString().trim();
-}
+};
 
 test('test load directives', async (t) => {
   const expected = await loadFile('fixtures/directives/expected.graphql');
-  
+
   const loader = new loaders.GraphQLFileLoader();
 
   const contents = await loader.loadFile(__dirname, 'fixtures/directives/a.graphql');
@@ -23,13 +23,13 @@ test('test load directives', async (t) => {
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
   });
-  
+
   t.end();
 });
 
 test('test load unions', async (t) => {
   const expected = await loadFile('fixtures/unions/expected.graphql');
-  
+
   const loader = new loaders.GraphQLFileLoader();
 
   const contents = await loader.loadFile(__dirname, 'fixtures/unions/a.graphql');
@@ -39,13 +39,13 @@ test('test load unions', async (t) => {
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
   });
-  
+
   t.end();
 });
 
 test('test load only imported types', async (t) => {
   const expected = await loadFile('fixtures/unused/expected.graphql');
-  
+
   const loader = new loaders.GraphQLFileLoader();
 
   const contents = await loader.loadFile(__dirname, 'fixtures/unused/a.graphql');
@@ -55,13 +55,13 @@ test('test load only imported types', async (t) => {
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
   });
-  
+
   t.end();
 });
 
 test('test circular', async (t) => {
   const expected = await loadFile('fixtures/circular/expected.graphql');
-  
+
   const loader = new loaders.GraphQLFileLoader();
 
   const contents = await loader.loadFile(__dirname, 'fixtures/circular/a.graphql');
@@ -71,7 +71,7 @@ test('test circular', async (t) => {
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
   });
-  
+
   t.end();
 });
 
@@ -83,13 +83,13 @@ test.skip('test collision', async (t) => {
   t.throws(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
   });
-   
+
   t.end();
 });
 
 test('test deep', async (t) => {
   const expected = await loadFile('fixtures/deep/expected.graphql');
-  
+
   const loader = new loaders.GraphQLFileLoader();
 
   const contents = await loader.loadFile(__dirname, 'fixtures/deep/a.graphql');
@@ -99,13 +99,13 @@ test('test deep', async (t) => {
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
   });
-  
+
   t.end();
 });
 
 test('test interface implementations', async (t) => {
   const expected = await loadFile('fixtures/implements/expected.graphql');
-  
+
   const loader = new loaders.GraphQLFileLoader();
 
   const contents = await loader.loadFile(__dirname, 'fixtures/implements/a.graphql');
@@ -115,13 +115,13 @@ test('test interface implementations', async (t) => {
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
   });
-  
+
   t.end();
 });
 
 test('test extends', async (t) => {
   const expected = await loadFile('fixtures/extends/expected.graphql');
-  
+
   const loader = new loaders.GraphQLFileLoader();
 
   const contents = await loader.loadFile(__dirname, 'fixtures/extends/a.graphql');
@@ -131,13 +131,13 @@ test('test extends', async (t) => {
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
   });
-  
+
   t.end();
 });
 
 test('test extends multiple', async (t) => {
   const expected = await loadFile('fixtures/extends-multiple/expected.graphql');
-  
+
   const loader = new loaders.GraphQLFileLoader();
 
   const contents = await loader.loadFile(__dirname, 'fixtures/extends-multiple/a.graphql');
@@ -147,13 +147,13 @@ test('test extends multiple', async (t) => {
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
   });
-  
+
   t.end();
 });
 
 test('test multiple', async (t) => {
   const expected = await loadFile('fixtures/multiple/expected.graphql');
-  
+
   const loader = new loaders.GraphQLFileLoader();
 
   const contents = await loader.loadFile(__dirname, 'fixtures/multiple/a.graphql');
@@ -163,13 +163,13 @@ test('test multiple', async (t) => {
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
   });
-  
+
   t.end();
 });
 
 test('test lists', async (t) => {
   const expected = await loadFile('fixtures/lists/expected.graphql');
-  
+
   const loader = new loaders.GraphQLFileLoader();
 
   const contents = await loader.loadFile(__dirname, 'fixtures/lists/a.graphql');
@@ -179,13 +179,13 @@ test('test lists', async (t) => {
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
   });
-  
+
   t.end();
 });
 
 test('test arguments', async (t) => {
   const expected = await loadFile('fixtures/arguments/expected.graphql');
-  
+
   const loader = new loaders.GraphQLFileLoader();
 
   const contents = await loader.loadFile(__dirname, 'fixtures/arguments/a.graphql');
@@ -195,13 +195,13 @@ test('test arguments', async (t) => {
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
   });
-  
+
   t.end();
 });
 
 test('test scalars', async (t) => {
   const expected = await loadFile('fixtures/scalars/expected.graphql');
-  
+
   const loader = new loaders.GraphQLFileLoader();
 
   const contents = await loader.loadFile(__dirname, 'fixtures/scalars/a.graphql');
@@ -211,13 +211,13 @@ test('test scalars', async (t) => {
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
   });
-  
+
   t.end();
 });
 
 test('test enums', async (t) => {
   const expected = await loadFile('fixtures/enums/expected.graphql');
-  
+
   const loader = new loaders.GraphQLFileLoader();
 
   const contents = await loader.loadFile(__dirname, 'fixtures/enums/a.graphql');
@@ -227,7 +227,23 @@ test('test enums', async (t) => {
   t.doesNotThrow(() => {
     graphql.validateSchema(graphql.buildSchema(contents));
   });
-  
+
+  t.end();
+});
+
+test('only imports at root file', async (t) => {
+  const expected = await loadFile('fixtures/only-imports/expected.graphql');
+
+  const loader = new loaders.GraphQLFileLoader();
+
+  const contents = await loader.loadFile(__dirname, 'fixtures/only-imports/a.graphql');
+
+  t.equal(contents, expected);
+
+  t.doesNotThrow(() => {
+    graphql.validateSchema(graphql.buildSchema(contents));
+  });
+
   t.end();
 });
 
@@ -236,12 +252,12 @@ test('test graphql tools loader', async (t) => {
     cwd: __dirname,
     ignore: ['*/**/expected.graphql'],
     skipGraphQLImport: true,
-    loaders: [new loaders.GraphQLFileLoader()]
+    loaders: [new loaders.GraphQLFileLoader()],
   });
 
   t.doesNotThrow(() => {
     graphql.validateSchema(schema);
   });
-  
+
   t.end();
 });

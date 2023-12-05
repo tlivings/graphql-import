@@ -1,2 +1,3 @@
+directive @someDirective on SCALAR
 
-scalar B
+scalar B @someDirective

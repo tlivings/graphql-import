@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "tape tests/*.js"
+    "test": "tape tests/*.js",
+    "lint": "eslint . && prettier --check .",
+    "lint:fix": "eslint . --fix && prettier -w ."
   },
   "author": "",
   "license": "ISC",
@@ -14,6 +16,26 @@
   },
   "devDependencies": {
     "@graphql-tools/load": "^8.0.0",
-    "tape": "^5.7.1"
+    "tape": "^5.7.1",
+    "eslint": "^8.55.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.1.0"
+  },
+  "eslintConfig": {
+    "extends": [
+      "prettier"
+    ],
+    "parserOptions": {
+      "ecmaVersion": "latest"
+    },
+    "env": {
+      "es6": true
+    }
+  },
+  "prettier": {
+    "tabWidth": 2,
+    "singleQuote": true,
+    "bracketSameLine": true,
+    "printWidth": 100
   }
 }
