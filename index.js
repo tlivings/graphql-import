@@ -158,7 +158,8 @@ class GraphQLFileLoader {
 
     try {
       document = this._graphqlParser.parse(fileName, file);
-    } catch (error) {
+    } 
+    catch (error) {
       //Nothing was even processed
       if (!definitions.length) {
         throw error;
